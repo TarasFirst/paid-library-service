@@ -91,15 +91,15 @@ class BookViewSetPermissionsTest(APITestCase):
         response = self.client.patch(self.book_detail_url, data, **self.get_jwt_token(self.admin_user))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_unauthenticated_user_can_retrieve_book(self):
-        """Test that unauthenticated users can retrieve a specific book."""
+    def test_unauthenticated_user_cannot_retrieve_book(self):
+        """Test that unauthenticated users cannot retrieve a specific book."""
         response = self.client.get(self.book_detail_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_authenticated_non_admin_user_can_retrieve_book(self):
+    def test_authenticated_non_admin_user_cannot_retrieve_book(self):
         """Test that authenticated non-admin users can retrieve a specific book."""
         response = self.client.get(self.book_detail_url, **self.get_jwt_token(self.user))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_admin_cannot_create_book_with_invalid_data(self):
         """Test that admin cannot create a book with invalid data."""
