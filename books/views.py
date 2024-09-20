@@ -10,7 +10,7 @@ class BookViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy"):
+        if self.action in ("create", "update", "partial_update", "destroy", "retrieve"):
             self.permission_classes = (IsAdminUser,)
         return super().get_permissions()
 
