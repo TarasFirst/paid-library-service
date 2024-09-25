@@ -33,7 +33,19 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             if self.request.query_params.get('user_id'):
                 raise PermissionDenied("You do not have permission to filter by user_id.")
             return queryset.filter(user=self.request.user)
+        """
+        add new___________________________
+        """
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            if is_active.lower() == 'true':
+                queryset = queryset.filter(actual_return_date__isnull=True)
+            elif is_active.lower() == 'false':
 
+                queryset = queryset.filter(actual_return_date__isnull=False)
+        """
+        add new_____________________
+        """
         return queryset
 
     def perform_create(self, serializer):
