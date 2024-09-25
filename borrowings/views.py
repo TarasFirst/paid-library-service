@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError, PermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 from borrowings.models import Borrowing
@@ -19,9 +19,22 @@ class BorrowingViewSet(viewsets.ModelViewSet):
       If validation errors occur, they are converted into Django REST Framework (DRF) validation errors.
 
     """
-    queryset = Borrowing.objects.all()
     permission_classes = (IsAuthenticated,)
     serializer_class = BorrowingSerializer
+    queryset = Borrowing.objects.all()
+
+    def get_queryset(self):
+        queryset = Borrowing.objects.all()
+
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(user=self.request.user)
+
+        if not self.request.user.is_staff:
+            if self.request.query_params.get('user_id'):
+                raise PermissionDenied("You do not have permission to filter by user_id.")
+            return queryset.filter(user=self.request.user)
+
+        return queryset
 
     def perform_create(self, serializer):
         """
