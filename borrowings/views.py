@@ -8,3 +8,5 @@ from borrowings.serializers import BorrowingSerializer
 class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
     permission_classes = (IsAuthenticated,)
+    serializer_class = BorrowingSerializer
+
