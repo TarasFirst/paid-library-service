@@ -25,14 +25,25 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Borrowing.objects.all()
+        is_active = self.request.query_params.get("is_active")
+        user_id = self.request.query_params.get("user_id")
 
-        if not self.request.user.is_staff:
-            queryset = queryset.filter(user=self.request.user)
+        if is_active:
+            if is_active.lower() == "true":
+                queryset = queryset.filter(actual_return_date__isnull=True)
+            elif is_active.lower() == "false":
+                queryset = queryset.filter(actual_return_date__isnull=False)
+            else:
+                raise DRFValidationError("Invalid value for is_active. Use 'true' or 'false'.")
 
-        if not self.request.user.is_staff:
-            if self.request.query_params.get('user_id'):
+        if self.request.user.is_staff:
+            if user_id:
+                queryset = queryset.filter(user_id=user_id)
+        else:
+            if user_id:
                 raise PermissionDenied("You do not have permission to filter by user_id.")
-            return queryset.filter(user=self.request.user)
+            else:
+                queryset = queryset.filter(user=self.request.user)
 
         return queryset
 
