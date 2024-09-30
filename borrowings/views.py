@@ -1,10 +1,12 @@
+from datetime import date
+
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError as DRFValidationError, PermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 from borrowings.models import Borrowing
-from borrowings.serializers import BorrowingSerializer
+from borrowings.serializers import BorrowingSerializer, BorrowingCreateSerializer, BorrowingUpdateSerializer
 
 
 class BorrowingViewSet(viewsets.ModelViewSet):
@@ -20,8 +22,15 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
     """
     permission_classes = (IsAuthenticated,)
-    serializer_class = BorrowingSerializer
     queryset = Borrowing.objects.all()
+
+    def get_serializer_class(self):
+        if self.action is "create":
+            return BorrowingCreateSerializer
+        if self.action in ("update", "partial_update"):
+            return BorrowingUpdateSerializer
+
+        return BorrowingSerializer
 
     def get_queryset(self):
         queryset = Borrowing.objects.all()
@@ -81,3 +90,27 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             serializer.save(user=self.request.user)
         except DjangoValidationError as e:
             raise DRFValidationError(detail=e.message_dict)
+
+    def perform_update(self, serializer):
+        """
+        Updates the borrowing entry.
+        - Only the owner of the borrowing can update it.
+        - Once the book is returned (i.e., actual_return_date is set), the borrowing becomes read-only.
+        - If actual_return_date is provided, the book is returned, and its inventory is increased by 1.
+        """
+        borrowing = self.get_object()
+
+        if self.request.user != borrowing.user:
+            raise PermissionDenied("You do not have permission to modify this borrowing.")
+
+        if borrowing.actual_return_date and borrowing.actual_return_date != date.today():
+            raise DRFValidationError("The actual return date can only be today's date.")
+
+        if borrowing.actual_return_date:
+            raise DRFValidationError("This borrowing is already completed and cannot be modified.")
+
+        if "actual_return_date" in self.request.data:
+            borrowing.book.return_book()
+            serializer.save()
+
+        serializer.save()
