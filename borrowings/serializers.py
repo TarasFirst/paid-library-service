@@ -18,6 +18,7 @@ class BorrowingSerializer(serializers.ModelSerializer):
             "id",
             "borrow_date",
             "expected_return_date",
+            "actual_return_date",
             "book",
             "book_detail",
             "user",
@@ -30,3 +31,31 @@ class BorrowingSerializer(serializers.ModelSerializer):
         If actual_return_date is not set, the borrowing is active.
         """
         return obj.actual_return_date is None
+
+
+class BorrowingCreateSerializer(serializers.ModelSerializer):
+    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all())
+    user = serializers.ReadOnlyField(source="user.email")
+
+    class Meta:
+        model = Borrowing
+        fields = [
+            "id",
+            "expected_return_date",
+            "book",
+            "user",
+        ]
+
+
+class BorrowingUpdateSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source="user.email")
+    borrow_date = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Borrowing
+        fields = [
+            "id",
+            "actual_return_date",
+            "user",
+            "borrow_date"
+        ]
