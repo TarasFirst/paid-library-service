@@ -16,7 +16,7 @@ class Book(models.Model):
     daily_fee = models.DecimalField(max_digits=5, decimal_places=2)
 
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.author}), cover: {self.cover}, price: {self.daily_fee} $ per day"
 
     def borrow_book(self):
         """Decreases inventory by 1 when a book is borrowed."""
