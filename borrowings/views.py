@@ -25,7 +25,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
 
     def get_serializer_class(self):
-        if self.action is "create":
+        if self.action == "create":
             return BorrowingCreateSerializer
         if self.action in ("update", "partial_update"):
             return BorrowingUpdateSerializer
@@ -103,14 +103,14 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         if self.request.user != borrowing.user:
             raise PermissionDenied("You do not have permission to modify this borrowing.")
 
-        if borrowing.actual_return_date and borrowing.actual_return_date != date.today():
-            raise DRFValidationError("The actual return date can only be today's date.")
-
-        if borrowing.actual_return_date:
+        if not borrowing.is_active:
             raise DRFValidationError("This borrowing is already completed and cannot be modified.")
 
-        if "actual_return_date" in self.request.data:
-            borrowing.book.return_book()
-            serializer.save()
+        manage_this_borrowing = serializer.validated_data.get("manage_this_borrowing")
 
-        serializer.save()
+        if manage_this_borrowing == "return":
+            serializer.save(actual_return_date=date.today())
+            borrowing.book.return_book()
+
+        else:
+            serializer.save()
