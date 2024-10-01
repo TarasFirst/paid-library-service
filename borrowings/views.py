@@ -1,12 +1,20 @@
-from datetime import date
-
+from django.utils.timezone import localdate
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError as DRFValidationError, PermissionDenied
+from rest_framework.exceptions import (
+    ValidationError as DRFValidationError,
+    PermissionDenied,
+)
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 
+from books.models import Book
 from borrowings.models import Borrowing
-from borrowings.serializers import BorrowingSerializer, BorrowingCreateSerializer, BorrowingUpdateSerializer
+from borrowings.serializers import (
+    BorrowingSerializer,
+    BorrowingCreateSerializer,
+    BorrowingUpdateSerializer,
+)
 
 
 class BorrowingViewSet(viewsets.ModelViewSet):
@@ -21,6 +29,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
       If validation errors occur, they are converted into Django REST Framework (DRF) validation errors.
 
     """
+
     permission_classes = (IsAuthenticated,)
     queryset = Borrowing.objects.all()
 
@@ -31,6 +40,14 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             return BorrowingUpdateSerializer
 
         return BorrowingSerializer
+
+    def get_object(self):
+        obj = super().get_object()
+        if not self.request.user.is_staff and obj.user != self.request.user:
+            raise PermissionDenied(
+                "You do not have permission to access this borrowing."
+            )
+        return obj
 
     def get_queryset(self):
         queryset = Borrowing.objects.all()
@@ -43,74 +60,99 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             elif is_active.lower() == "false":
                 queryset = queryset.filter(actual_return_date__isnull=False)
             else:
-                raise DRFValidationError("Invalid value for is_active. Use 'true' or 'false'.")
+                raise DRFValidationError(
+                    "Invalid value for is_active. Use 'true' or 'false'."
+                )
 
-        if self.request.user.is_staff:
-            if user_id:
-                queryset = queryset.filter(user_id=user_id)
-        else:
-            if user_id:
-                raise PermissionDenied("You do not have permission to filter by user_id.")
+        if not self.detail:
+            if self.request.user.is_staff:
+                if user_id:
+                    queryset = queryset.filter(user_id=user_id)
             else:
-                queryset = queryset.filter(user=self.request.user)
+                if user_id:
+                    raise PermissionDenied(
+                        "You do not have permission to filter by user_id."
+                    )
+                else:
+                    queryset = queryset.filter(user=self.request.user)
 
         return queryset
 
     def perform_create(self, serializer):
         """
-        Creates a new borrowing entry, decreases the book inventory, and associates it with the current user.
+        Creates a new borrowing entry, decreases the book inventory, and
+        associates it with the current user.
 
-        - Sets the `user` field to the currently authenticated user (`self.request.user`).
-        - Calls the `borrow_book()` method on the selected book to decrease the inventory by 1.
-        - Raises a `ValidationError` if the book's inventory is insufficient (inventory <= 0).
-        - Handles model validation errors and converts them into DRF validation errors.
+        - Sets the `user` field to the currently authenticated user
+        (`self.request.user`).
+        - Calls the `borrow_book()` method on the selected book to decrease
+        the inventory by 1.
+        - Raises a `ValidationError` if the book's inventory is insufficient
+        (inventory <= 0).
+        - Handles model validation errors and converts them into DRF validation
+        errors.
 
         Process:
         1. Retrieve the book from the validated data.
         2. Attempt to decrease the book's inventory by calling `borrow_book()`.
            If no copies are available, an error is raised.
-        3. Save the borrowing entry with the current user assigned to the `user` field.
+        3. Save the borrowing entry with the current user assigned to the `user`
+        field.
 
         Args:
-            serializer: The serializer instance containing the data for the new borrowing.
+            serializer: The serializer instance containing the data for the new
+            borrowing.
 
         Raises:
             ValidationError:
-                - If no copies of the book are available, a `ValueError` is raised by `borrow_book()`,
-                  which is converted into a DRF `ValidationError`.
-                - If any validation errors occur when saving the borrowing entry, they are converted into a DRF `ValidationError`.
+                - If no copies of the book are available, a `ValueError`
+                is raised by `borrow_book()`, which is converted into a DRF
+                `ValidationError`.
+                - If any validation errors occur when saving the borrowing
+                entry, they are converted into a DRF `ValidationError`.
         """
-        book = serializer.validated_data["book"]
-        try:
-            book.borrow_book()
-        except ValueError as e:
-            raise DRFValidationError({"book": str(e)})
+        with transaction.atomic():
+            book = serializer.validated_data["book"]
 
-        try:
-            serializer.save(user=self.request.user)
-        except DjangoValidationError as e:
-            raise DRFValidationError(detail=e.message_dict)
+            book = Book.objects.select_for_update().get(pk=book.pk)
+
+            if book.inventory <= 0:
+                raise DRFValidationError(
+                    {"book": "No more copies available to borrow."}
+                )
+
+            try:
+                borrowing = serializer.save(user=self.request.user)
+            except DjangoValidationError as e:
+                raise DRFValidationError(detail=e.message_dict)
+
+            try:
+                book.borrow_book()
+            except ValueError as e:
+                borrowing.delete()
+                raise DRFValidationError({"book": str(e)})
 
     def perform_update(self, serializer):
-        """
-        Updates the borrowing entry.
-        - Only the owner of the borrowing can update it.
-        - Once the book is returned (i.e., actual_return_date is set), the borrowing becomes read-only.
-        - If actual_return_date is provided, the book is returned, and its inventory is increased by 1.
-        """
         borrowing = self.get_object()
 
         if self.request.user != borrowing.user:
-            raise PermissionDenied("You do not have permission to modify this borrowing.")
+            raise PermissionDenied(
+                "You do not have permission to modify this borrowing."
+            )
 
         if not borrowing.is_active:
-            raise DRFValidationError("This borrowing is already completed and cannot be modified.")
+            raise DRFValidationError(
+                {
+                    "detail": "The book has already been returned."
+                }
+            )
 
-        manage_this_borrowing = serializer.validated_data.get("manage_this_borrowing")
+        manage_this_borrowing = serializer.validated_data.get(
+            "manage_this_borrowing"
+        )
 
         if manage_this_borrowing == "return":
-            serializer.save(actual_return_date=date.today())
+            serializer.save(actual_return_date=localdate())
             borrowing.book.return_book()
-
         else:
             serializer.save()
