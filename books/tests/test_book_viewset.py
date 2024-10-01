@@ -10,41 +10,31 @@ from users.models import User
 class BookViewSetPermissionsTest(APITestCase):
 
     def setUp(self):
-        # Create a book to test listing
         self.book = Book.objects.create(
             title="Test Book",
             author="Test Author",
             cover="SOFT",
             inventory=10,
-            daily_fee="5.99"
+            daily_fee="5.99",
         )
 
-        # Create a regular user (non-admin)
         self.user = User.objects.create_user(
-            email="user@test.com",
-            password="password123"
+            email="user@test.com", password="password123"
         )
 
-        # Create an admin user
         self.admin_user = User.objects.create_superuser(
-            email="admin@test.com",
-            password="password123"
+            email="admin@test.com", password="password123"
         )
 
-        # URLs
         self.books_list_url = reverse("books:book-list")
-        self.book_detail_url = reverse(
-            "books:book-detail", kwargs={"pk": self.book.id}
-        )
+        self.book_detail_url = reverse("books:book-detail", kwargs={"pk": self.book.id})
 
     def get_jwt_token(self, user):
         """
         Helper method to generate JWT tokens for a user
         """
         refresh = RefreshToken.for_user(user)
-        return {
-            "HTTP_AUTHORIZATION": f"Bearer {refresh.access_token}"
-        }
+        return {"HTTP_AUTHORIZE": f"Bearer {refresh.access_token}"}
 
     def test_unauthenticated_user_can_list_books(self):
         response = self.client.get(self.books_list_url)
@@ -56,7 +46,7 @@ class BookViewSetPermissionsTest(APITestCase):
             "author": "Author",
             "cover": "HARD",
             "inventory": 5,
-            "daily_fee": "4.99"
+            "daily_fee": "4.99",
         }
         response = self.client.post(self.books_list_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -68,9 +58,7 @@ class BookViewSetPermissionsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_authenticated_non_admin_user_can_list_books(self):
-        response = self.client.get(
-            self.books_list_url, **self.get_jwt_token(self.user)
-        )
+        response = self.client.get(self.books_list_url, **self.get_jwt_token(self.user))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_authenticated_non_admin_user_cannot_create_update_del_books(self):
@@ -79,7 +67,7 @@ class BookViewSetPermissionsTest(APITestCase):
             "author": "Author",
             "cover": "HARD",
             "inventory": 5,
-            "daily_fee": "4.99"
+            "daily_fee": "4.99",
         }
         response = self.client.post(
             self.books_list_url, data, **self.get_jwt_token(self.user)
@@ -102,16 +90,22 @@ class BookViewSetPermissionsTest(APITestCase):
             "author": "Author",
             "cover": "HARD",
             "inventory": 5,
-            "daily_fee": "4.99"
+            "daily_fee": "4.99",
         }
 
-        response = self.client.post(self.books_list_url, data, **self.get_jwt_token(self.admin_user))
+        response = self.client.post(
+            self.books_list_url, data, **self.get_jwt_token(self.admin_user)
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response = self.client.put(self.book_detail_url, data, **self.get_jwt_token(self.admin_user))
+        response = self.client.put(
+            self.book_detail_url, data, **self.get_jwt_token(self.admin_user)
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = self.client.delete(self.book_detail_url, **self.get_jwt_token(self.admin_user))
+        response = self.client.delete(
+            self.book_detail_url, **self.get_jwt_token(self.admin_user)
+        )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_authenticated_non_admin_user_cannot_partial_update_book(self):
