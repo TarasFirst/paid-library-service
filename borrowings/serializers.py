@@ -54,7 +54,7 @@ class BorrowingUpdateSerializer(BorrowingSerializer):
         ("return", "Return book")
     ]
     manage_this_borrowing = serializers.ChoiceField(
-        choices= STATUS_CHOICES,
+        choices=STATUS_CHOICES,
         default="keep",
         write_only=True,
     )
