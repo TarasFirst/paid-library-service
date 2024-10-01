@@ -23,7 +23,7 @@ class BorrowingSerializer(serializers.ModelSerializer):
             "book",
             "book_detail",
             "user",
-            "is_active"
+            "is_active",
         ]
 
 
@@ -43,16 +43,13 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
             "book",
             "book_detail",
             "user",
-            "is_active"
+            "is_active",
         ]
 
 
 class BorrowingUpdateSerializer(BorrowingSerializer):
 
-    STATUS_CHOICES = [
-        ("keep", "Keep book"),
-        ("return", "Return book")
-    ]
+    STATUS_CHOICES = [("keep", "Keep book"), ("return", "Return book")]
     manage_this_borrowing = serializers.ChoiceField(
         choices=STATUS_CHOICES,
         default="keep",
@@ -73,5 +70,5 @@ class BorrowingUpdateSerializer(BorrowingSerializer):
             "book_detail",
             "user",
             "manage_this_borrowing",
-            "is_active"
+            "is_active",
         ]
