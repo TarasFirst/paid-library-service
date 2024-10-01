@@ -16,10 +16,15 @@ class Book(models.Model):
     daily_fee = models.DecimalField(max_digits=5, decimal_places=2)
 
     def __str__(self):
-        return f"{self.title} ({self.author}), cover: {self.cover}, price: {self.daily_fee} $ per day"
+        return (
+            f"{self.title} ({self.author}),"
+            f"cover: {self.cover}, price: {self.daily_fee} $ per day"
+        )
 
     def borrow_book(self):
-        """Decreases inventory by 1 when a book is borrowed."""
+        """
+        Decreases inventory by 1 when a book is borrowed.
+        """
         if self.inventory > 0:
             self.inventory -= 1
             self.save()
@@ -27,6 +32,8 @@ class Book(models.Model):
             raise ValueError("No more copies available to borrow.")
 
     def return_book(self):
-        """Increases inventory by 1 when a book is returned."""
+        """
+        Increases inventory by 1 when a book is returned.
+        """
         self.inventory += 1
         self.save()

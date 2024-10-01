@@ -12,19 +12,23 @@ class Borrowing(models.Model):
     borrow_date = models.DateField(auto_now_add=True)
     expected_return_date = models.DateField()
     actual_return_date = models.DateField(null=True, blank=True)
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="borrowings")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="borrowings")
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, related_name="borrowings"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="borrowings"
+    )
 
     @property
     def is_active(self):
         """
-        Визначає, чи є бронювання активним. Якщо actual_return_date не встановлено,
-        бронювання вважається активним.
+        Set - whether borrowing is active or not.
         """
         return self.actual_return_date is None
 
     def __str__(self):
-        return (f"{self.user.email} borrowed {self.book.title} from {self.borrow_date},"
+        return (f"{self.user.email} borrowed {self.book.title}"
+                f"from {self.borrow_date},"
                 f"to {self.expected_return_date}")
 
     def clean(self):
