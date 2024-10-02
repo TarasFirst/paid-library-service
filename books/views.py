@@ -1,11 +1,46 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 
+from drf_spectacular.utils import extend_schema, extend_schema_view
+
 from books.models import Book
 from books.serializers import BookListSerializer, BookDetailSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        description="Retrieve a list of all books.",
+        responses=BookListSerializer,
+    ),
+    retrieve=extend_schema(
+        description="Retrieve detailed information about a book by its ID.",
+        responses=BookDetailSerializer,
+    ),
+    create=extend_schema(
+        description="Create a new book. Accessible only to admin users.",
+        request=BookDetailSerializer,
+        responses=BookDetailSerializer,
+    ),
+    update=extend_schema(
+        description="Update a book's information. Accessible only to admin users.",
+        request=BookDetailSerializer,
+        responses=BookDetailSerializer,
+    ),
+    partial_update=extend_schema(
+        description="Partially update a book's information. Accessible only to admin users.",
+        request=BookDetailSerializer,
+        responses=BookDetailSerializer,
+    ),
+    destroy=extend_schema(
+        description="Delete a book. Accessible only to admin users.",
+        responses={204: None},
+    ),
+)
 class BookViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing books.
+    Allows performing standard CRUD operations on books.
+    """
     queryset = Book.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
