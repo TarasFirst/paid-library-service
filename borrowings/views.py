@@ -16,20 +16,91 @@ from borrowings.serializers import (
     BorrowingUpdateSerializer,
 )
 
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiExample,
+    OpenApiResponse,
+)
 
+
+@extend_schema_view(
+    list=extend_schema(
+        description="Retrieve a list of borrowings. Non-admin users will only see their own borrowings.",
+        parameters=[
+            OpenApiParameter(
+                name='is_active',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="Filter borrowings by active status. Use 'true' or 'false'.",
+                required=False,
+                examples=[
+                    OpenApiExample('Active Borrowings', value='true'),
+                    OpenApiExample('Inactive Borrowings', value='false'),
+                ],
+            ),
+            OpenApiParameter(
+                name='user_id',
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="Filter borrowings by user ID. Available only to admin users.",
+                required=False,
+            ),
+        ],
+        responses={200: BorrowingSerializer(many=True)},
+    ),
+    retrieve=extend_schema(
+        description="Retrieve details of a borrowing by its ID. Non-admin users can only access their own borrowings.",
+        responses={
+            200: BorrowingSerializer,
+            403: OpenApiResponse(description="Forbidden"),
+            404: OpenApiResponse(description="Not Found"),
+        },
+    ),
+    create=extend_schema(
+        description="Create a new borrowing. The user will be set to the currently authenticated user.",
+        request=BorrowingCreateSerializer,
+        responses={
+            201: BorrowingSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+        },
+    ),
+    update=extend_schema(
+        description="Update an existing borrowing. Only the owner of the borrowing can perform this action.",
+        request=BorrowingUpdateSerializer,
+        responses={
+            200: BorrowingSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+            403: OpenApiResponse(description="Forbidden"),
+        },
+    ),
+    partial_update=extend_schema(
+        description="Partially update an existing borrowing. Only the owner of the borrowing can perform this action.",
+        request=BorrowingUpdateSerializer,
+        responses={
+            200: BorrowingSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+            403: OpenApiResponse(description="Forbidden"),
+        },
+    ),
+    destroy=extend_schema(
+        description="Delete a borrowing. Only the owner of the borrowing can perform this action.",
+        responses={
+            204: OpenApiResponse(description="No Content"),
+            403: OpenApiResponse(description="Forbidden"),
+        },
+    ),
+)
 class BorrowingViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing book borrowings.
 
-    - This ViewSet allows creating, updating, deleting, and retrieving borrowings.
-    - The `user` field is automatically assigned to the currently authenticated user when creating a borrowing.
-
-    Methods:
-    - `perform_create(self, serializer)`: Saves a new borrowing and associates it with the user.
-      If validation errors occur, they are converted into Django REST Framework (DRF) validation errors.
-
+    - Non-admin users can list, retrieve, update, and delete their own borrowings.
+    - Admin users can access and manage all borrowings.
+    - Users can create new borrowings.
+    - Only the owner of a borrowing can update or delete it.
     """
-
     permission_classes = (IsAuthenticated,)
     queryset = Borrowing.objects.all()
 
@@ -38,7 +109,6 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             return BorrowingCreateSerializer
         if self.action in ("update", "partial_update"):
             return BorrowingUpdateSerializer
-
         return BorrowingSerializer
 
     def get_object(self):
@@ -78,42 +148,17 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @extend_schema(
+        description="Handle the creation of a new borrowing. Decreases the book's inventory if successful.",
+        request=BorrowingCreateSerializer,
+        responses={
+            201: BorrowingSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+        },
+    )
     def perform_create(self, serializer):
-        """
-        Creates a new borrowing entry, decreases the book inventory, and
-        associates it with the current user.
-
-        - Sets the `user` field to the currently authenticated user
-        (`self.request.user`).
-        - Calls the `borrow_book()` method on the selected book to decrease
-        the inventory by 1.
-        - Raises a `ValidationError` if the book's inventory is insufficient
-        (inventory <= 0).
-        - Handles model validation errors and converts them into DRF validation
-        errors.
-
-        Process:
-        1. Retrieve the book from the validated data.
-        2. Attempt to decrease the book's inventory by calling `borrow_book()`.
-           If no copies are available, an error is raised.
-        3. Save the borrowing entry with the current user assigned to the `user`
-        field.
-
-        Args:
-            serializer: The serializer instance containing the data for the new
-            borrowing.
-
-        Raises:
-            ValidationError:
-                - If no copies of the book are available, a `ValueError`
-                is raised by `borrow_book()`, which is converted into a DRF
-                `ValidationError`.
-                - If any validation errors occur when saving the borrowing
-                entry, they are converted into a DRF `ValidationError`.
-        """
         with transaction.atomic():
             book = serializer.validated_data["book"]
-
             book = Book.objects.select_for_update().get(pk=book.pk)
 
             if book.inventory <= 0:
@@ -132,6 +177,18 @@ class BorrowingViewSet(viewsets.ModelViewSet):
                 borrowing.delete()
                 raise DRFValidationError({"book": str(e)})
 
+    @extend_schema(
+        description=(
+            "Handle the update of an existing borrowing. "
+            "If 'manage_this_borrowing' is set to 'return', the borrowing is marked as returned."
+        ),
+        request=BorrowingUpdateSerializer,
+        responses={
+            200: BorrowingSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+            403: OpenApiResponse(description="Forbidden"),
+        },
+    )
     def perform_update(self, serializer):
         borrowing = self.get_object()
 
@@ -156,3 +213,17 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             borrowing.book.return_book()
         else:
             serializer.save()
+
+    @extend_schema(
+        description="Delete an existing borrowing. Only the owner can perform this action.",
+        responses={
+            204: OpenApiResponse(description="No Content"),
+            403: OpenApiResponse(description="Forbidden"),
+        },
+    )
+    def perform_destroy(self, instance):
+        if not self.request.user.is_staff and instance.user != self.request.user:
+            raise PermissionDenied(
+                "You do not have permission to delete this borrowing."
+            )
+        instance.delete()
