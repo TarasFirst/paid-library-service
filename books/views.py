@@ -1,7 +1,8 @@
+from drf_spectacular.types import OpenApiTypes
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from rest_framework.pagination import PageNumberPagination
 
 from books.models import Book
@@ -74,6 +75,25 @@ class BookViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=title)
 
         if author:
-            queryset = queryset.filter(title__icontains=author)
+            queryset = queryset.filter(author__icontains=author)
 
         return queryset.distinct()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "title",
+                type=OpenApiTypes.STR,
+                description="Filter by book title "
+                            "(ex. ?title=fiction)",
+            ),
+            OpenApiParameter(
+                "author",
+                type=OpenApiTypes.STR,
+                description="Filter by book author "
+                            "(ex. ?author=fiction)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
