@@ -2,9 +2,15 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.pagination import PageNumberPagination
 
 from books.models import Book
 from books.serializers import BookListSerializer, BookDetailSerializer
+
+
+class LibraryPagination(PageNumberPagination):
+    page_size = 3
+    max_page_size = 20
 
 
 @extend_schema_view(
@@ -43,6 +49,7 @@ class BookViewSet(viewsets.ModelViewSet):
     """
     queryset = Book.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    pagination_class = LibraryPagination
 
     def get_permissions(self):
         if self.action in (
@@ -55,3 +62,18 @@ class BookViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return BookListSerializer
         return BookDetailSerializer
+
+    def get_queryset(self):
+        """Retrieve the book with filters"""
+        title = self.request.query_params.get("title")
+        author = self.request.query_params.get("author")
+
+        queryset = self.queryset
+
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        if author:
+            queryset = queryset.filter(title__icontains=author)
+
+        return queryset.distinct()

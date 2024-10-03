@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
 from books.models import Book
+from books.views import LibraryPagination
 from borrowings.models import Borrowing
 from borrowings.serializers import (
     BorrowingSerializer,
@@ -103,6 +104,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     """
     permission_classes = (IsAuthenticated,)
     queryset = Borrowing.objects.all()
+    pagination_class = LibraryPagination
 
     def get_serializer_class(self):
         if self.action == "create":
