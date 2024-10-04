@@ -75,14 +75,16 @@ class BorrowingViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.borrowing.id)
 
-    def test_user_can_filter_own_borrowings_by_is_active(self):
+    def test_users_can_filter_own_borrowings_by_is_active(self):
         self.authenticate(self.user)
         url = reverse("borrowings:borrowing-list") + "?is_active=true"
 
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for item in response.data:
+
+        results = response.data.get("results", response.data)
+
+        for item in results:
             self.assertTrue(item["is_active"])
             self.assertEqual(item["user"], self.user.email)
 
@@ -93,28 +95,37 @@ class BorrowingViewSetTestCase(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for item in response.data:
+
+        results = response.data.get("results", response.data)
+
+        for item in results:
             self.assertEqual(item["user"], self.user.email)
 
-    def test_user_cannot_filter_by_user_id(self):
+    def test_users_cannot_filter_by_user_id(self):
         self.authenticate(self.user)
-        url = reverse("borrowings:borrowing-list") + f"?user_id={self.another_user.id}"
+        url = (
+            reverse("borrowings:borrowing-list")
+            + f"?user_id={self.another_user.id}"
+        )
 
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
-            response.data["detail"], "You do not have permission to filter by user_id."
+            response.data["detail"],
+            "You do not have permission to filter by user_id.",
         )
 
-    def test_user_sees_only_their_borrowings(self):
+    def test_users_see_only_their_borrowings(self):
         self.authenticate(self.user)
         url = reverse("borrowings:borrowing-list")
 
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for item in response.data:
+
+        results = response.data.get("results", response.data)
+
+        for item in results:
             self.assertEqual(item["user"], self.user.email)
 
     def test_successful_borrowing_creation(self):
@@ -135,7 +146,9 @@ class BorrowingViewSetTestCase(APITestCase):
         self.book_with_inventory.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(self.book_with_inventory.inventory, initial_inventory - 1)
+        self.assertEqual(
+            self.book_with_inventory.inventory, initial_inventory - 1
+        )
 
     def test_inventory_not_decreased_on_invalid_borrowing_creation(self):
         self.authenticate(self.user)
@@ -171,12 +184,16 @@ class BorrowingViewSetTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.borrowing.actual_return_date, localdate())
-        self.assertEqual(self.book_with_inventory.inventory, initial_inventory + 1)
+        self.assertEqual(
+            self.book_with_inventory.inventory, initial_inventory + 1
+        )
         self.assertFalse(self.borrowing.is_active)
 
     def test_cannot_update_completed_borrowing(self):
         self.authenticate(self.user)
-        url = reverse("borrowings:borrowing-detail", args=[self.borrowing_completed.id])
+        url = reverse(
+            "borrowings:borrowing-detail", args=[self.borrowing_completed.id]
+        )
 
         response = self.client.patch(
             url, {"manage_this_borrowing": "return"}, format="json"
@@ -267,7 +284,9 @@ class BorrowingViewSetTestCase(APITestCase):
             - (1 if response1.status_code == status.HTTP_201_CREATED else 0)
             - (1 if response2.status_code == status.HTTP_201_CREATED else 0)
         )
-        self.assertEqual(self.book_with_inventory.inventory, expected_inventory)
+        self.assertEqual(
+            self.book_with_inventory.inventory, expected_inventory
+        )
 
     def test_invalid_manage_this_borrowing_value(self):
         self.authenticate(self.user)

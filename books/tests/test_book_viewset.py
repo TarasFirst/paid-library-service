@@ -27,7 +27,9 @@ class BookViewSetPermissionsTest(APITestCase):
         )
 
         self.books_list_url = reverse("books:book-list")
-        self.book_detail_url = reverse("books:book-detail", kwargs={"pk": self.book.id})
+        self.book_detail_url = reverse(
+            "books:book-detail", kwargs={"pk": self.book.id}
+        )
 
     def get_jwt_token(self, user):
         """
@@ -58,7 +60,9 @@ class BookViewSetPermissionsTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_authenticated_non_admin_user_can_list_books(self):
-        response = self.client.get(self.books_list_url, **self.get_jwt_token(self.user))
+        response = self.client.get(
+            self.books_list_url, **self.get_jwt_token(self.user)
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_authenticated_non_admin_user_cannot_create_update_del_books(self):
