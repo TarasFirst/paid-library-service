@@ -1,9 +1,13 @@
-from drf_spectacular.types import OpenApiTypes
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
-
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from rest_framework.pagination import PageNumberPagination
+
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+)
 
 from books.models import Book
 from books.serializers import BookListSerializer, BookDetailSerializer
@@ -29,12 +33,14 @@ class LibraryPagination(PageNumberPagination):
         responses=BookDetailSerializer,
     ),
     update=extend_schema(
-        description="Update a book's information. Accessible only to admin users.",
+        description="Update a book's information."
+                    "Accessible only to admin users.",
         request=BookDetailSerializer,
         responses=BookDetailSerializer,
     ),
     partial_update=extend_schema(
-        description="Partially update a book's information. Accessible only to admin users.",
+        description="Partially update a book's information."
+                    "Accessible only to admin users.",
         request=BookDetailSerializer,
         responses=BookDetailSerializer,
     ),
@@ -48,13 +54,18 @@ class BookViewSet(viewsets.ModelViewSet):
     ViewSet for managing books.
     Allows performing standard CRUD operations on books.
     """
+
     queryset = Book.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = LibraryPagination
 
     def get_permissions(self):
         if self.action in (
-                "create", "update", "partial_update", "destroy", "retrieve"
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+            "retrieve",
         ):
             self.permission_classes = (IsAdminUser,)
         return super().get_permissions()
@@ -84,14 +95,12 @@ class BookViewSet(viewsets.ModelViewSet):
             OpenApiParameter(
                 "title",
                 type=OpenApiTypes.STR,
-                description="Filter by book title "
-                            "(ex. ?title=fiction)",
+                description="Filter by book title " "(ex. ?title=fiction)",
             ),
             OpenApiParameter(
                 "author",
                 type=OpenApiTypes.STR,
-                description="Filter by book author "
-                            "(ex. ?author=fiction)",
+                description="Filter by book author " "(ex. ?author=fiction)",
             ),
         ]
     )
