@@ -43,7 +43,10 @@ class Borrowing(models.Model):
                         "Expected return date %(expected)s"
                         "cannot be earlier than %(min_date)s"
                     )
-                    % {"expected": self.expected_return_date,"min_date": min_date}
+                    % {
+                        "expected": self.expected_return_date,
+                        "min_date": min_date,
+                    }
                 }
             )
 

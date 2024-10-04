@@ -8,6 +8,14 @@ from rest_framework.exceptions import (
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiExample,
+    OpenApiResponse,
+)
+
 from books.models import Book
 from books.views import LibraryPagination
 from borrowings.models import Borrowing
@@ -17,42 +25,38 @@ from borrowings.serializers import (
     BorrowingUpdateSerializer,
 )
 
-from drf_spectacular.utils import (
-    extend_schema,
-    extend_schema_view,
-    OpenApiParameter,
-    OpenApiExample,
-    OpenApiResponse,
-)
-
 
 @extend_schema_view(
     list=extend_schema(
-        description="Retrieve a list of borrowings. Non-admin users will only see their own borrowings.",
+        description="Retrieve a list of borrowings."
+        "Non-admin users will only see their own borrowings.",
         parameters=[
             OpenApiParameter(
-                name='is_active',
+                name="is_active",
                 type=str,
                 location=OpenApiParameter.QUERY,
-                description="Filter borrowings by active status. Use 'true' or 'false'.",
+                description="Filter borrowings by active status."
+                            "Use 'true' or 'false'.",
                 required=False,
                 examples=[
-                    OpenApiExample('Active Borrowings', value='true'),
-                    OpenApiExample('Inactive Borrowings', value='false'),
+                    OpenApiExample("Active Borrowings", value="true"),
+                    OpenApiExample("Inactive Borrowings", value="false"),
                 ],
             ),
             OpenApiParameter(
-                name='user_id',
+                name="user_id",
                 type=int,
                 location=OpenApiParameter.QUERY,
-                description="Filter borrowings by user ID. Available only to admin users.",
+                description="Filter borrowings by user ID."
+                            "Available only to admin users.",
                 required=False,
             ),
         ],
         responses={200: BorrowingSerializer(many=True)},
     ),
     retrieve=extend_schema(
-        description="Retrieve details of a borrowing by its ID. Non-admin users can only access their own borrowings.",
+        description="Retrieve details of a borrowing by its ID."
+                    "Non-admin users can only access their own borrowings.",
         responses={
             200: BorrowingSerializer,
             403: OpenApiResponse(description="Forbidden"),
@@ -60,7 +64,9 @@ from drf_spectacular.utils import (
         },
     ),
     create=extend_schema(
-        description="Create a new borrowing. The user will be set to the currently authenticated user.",
+        description="Create a new borrowing."
+                    "The user will be set"
+                    "to the currently authenticated user.",
         request=BorrowingCreateSerializer,
         responses={
             201: BorrowingSerializer,
@@ -68,7 +74,8 @@ from drf_spectacular.utils import (
         },
     ),
     update=extend_schema(
-        description="Update an existing borrowing. Only the owner of the borrowing can perform this action.",
+        description="Update an existing borrowing."
+                    "Only the owner of the borrowing can perform this action",
         request=BorrowingUpdateSerializer,
         responses={
             200: BorrowingSerializer,
@@ -77,7 +84,8 @@ from drf_spectacular.utils import (
         },
     ),
     partial_update=extend_schema(
-        description="Partially update an existing borrowing. Only the owner of the borrowing can perform this action.",
+        description="Partially update an existing borrowing."
+                    "Only the owner of the borrowing can perform this action",
         request=BorrowingUpdateSerializer,
         responses={
             200: BorrowingSerializer,
@@ -86,7 +94,8 @@ from drf_spectacular.utils import (
         },
     ),
     destroy=extend_schema(
-        description="Delete a borrowing. Only the owner of the borrowing can perform this action.",
+        description="Delete a borrowing."
+                    "Only the owner of the borrowing can perform this action",
         responses={
             204: OpenApiResponse(description="No Content"),
             403: OpenApiResponse(description="Forbidden"),
@@ -97,11 +106,12 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing book borrowings.
 
-    - Non-admin users can list, retrieve, update, and delete their own borrowings.
+    - Non-admin users can list, retrieve, update, and del their own borrowings
     - Admin users can access and manage all borrowings.
     - Users can create new borrowings.
     - Only the owner of a borrowing can update or delete it.
     """
+
     permission_classes = (IsAuthenticated,)
     queryset = Borrowing.objects.all()
     pagination_class = LibraryPagination
@@ -151,7 +161,8 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         return queryset
 
     @extend_schema(
-        description="Handle the creation of a new borrowing. Decreases the book's inventory if successful.",
+        description="Handle the creation of a new borrowing."
+                    "Decreases the book's inventory if successful.",
         request=BorrowingCreateSerializer,
         responses={
             201: BorrowingSerializer,
@@ -182,7 +193,8 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     @extend_schema(
         description=(
             "Handle the update of an existing borrowing. "
-            "If 'manage_this_borrowing' is set to 'return', the borrowing is marked as returned."
+            "If 'manage_this_borrowing' is set to 'return',"
+            "the borrowing is marked as returned."
         ),
         request=BorrowingUpdateSerializer,
         responses={
@@ -201,9 +213,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
         if not borrowing.is_active:
             raise DRFValidationError(
-                {
-                    "detail": "The book has already been returned."
-                }
+                {"detail": "The book has already been returned."}
             )
 
         manage_this_borrowing = serializer.validated_data.get(
@@ -217,14 +227,18 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             serializer.save()
 
     @extend_schema(
-        description="Delete an existing borrowing. Only the owner can perform this action.",
+        description="Delete an existing borrowing."
+                    "Only the owner can perform this action.",
         responses={
             204: OpenApiResponse(description="No Content"),
             403: OpenApiResponse(description="Forbidden"),
         },
     )
     def perform_destroy(self, instance):
-        if not self.request.user.is_staff and instance.user != self.request.user:
+        if (
+            not self.request.user.is_staff
+            and instance.user != self.request.user
+        ):
             raise PermissionDenied(
                 "You do not have permission to delete this borrowing."
             )
