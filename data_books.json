@@ -1,0 +1,112 @@
+[
+  {
+    "model": "books.book",
+    "pk": 1,
+    "fields": {
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "cover": "HARD",
+      "inventory": 10,
+      "daily_fee": "1.99"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 2,
+    "fields": {
+      "title": "1984",
+      "author": "George Orwell",
+      "cover": "SOFT",
+      "inventory": 15,
+      "daily_fee": "2.50"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 3,
+    "fields": {
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee",
+      "cover": "HARD",
+      "inventory": 8,
+      "daily_fee": "2.25"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 4,
+    "fields": {
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "cover": "SOFT",
+      "inventory": 12,
+      "daily_fee": "1.75"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 5,
+    "fields": {
+      "title": "Moby-Dick",
+      "author": "Herman Melville",
+      "cover": "HARD",
+      "inventory": 5,
+      "daily_fee": "3.00"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 6,
+    "fields": {
+      "title": "The Catcher in the Rye",
+      "author": "J.D. Salinger",
+      "cover": "SOFT",
+      "inventory": 20,
+      "daily_fee": "2.00"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 7,
+    "fields": {
+      "title": "War and Peace",
+      "author": "Leo Tolstoy",
+      "cover": "HARD",
+      "inventory": 3,
+      "daily_fee": "3.50"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 8,
+    "fields": {
+      "title": "The Hobbit",
+      "author": "J.R.R. Tolkien",
+      "cover": "SOFT",
+      "inventory": 18,
+      "daily_fee": "2.75"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 9,
+    "fields": {
+      "title": "Crime and Punishment",
+      "author": "Fyodor Dostoevsky",
+      "cover": "HARD",
+      "inventory": 6,
+      "daily_fee": "2.99"
+    }
+  },
+  {
+    "model": "books.book",
+    "pk": 10,
+    "fields": {
+      "title": "Brave New World",
+      "author": "Aldous Huxley",
+      "cover": "SOFT",
+      "inventory": 9,
+      "daily_fee": "2.20"
+    }
+  }
+]
