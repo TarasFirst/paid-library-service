@@ -34,7 +34,8 @@ class BookInventoryTests(TestCase):
 
     def test_borrow_book_until_inventory_exhaustion(self):
         """
-        Test borrowing books until inventory is zero prevents further borrowing.
+        Test borrowing books until inventory
+        is zero prevents further borrowing.
         """
         for _ in range(self.book.inventory):
             self.book.borrow_book()

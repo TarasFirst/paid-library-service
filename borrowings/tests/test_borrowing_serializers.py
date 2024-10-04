@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -13,7 +13,6 @@ from users.models import User
 class BorrowingAPITestCase(APITestCase):
 
     def setUp(self):
-        # Створюємо користувачів
         self.user = User.objects.create_user(
             email="user@example.com", password="password"
         )
@@ -21,7 +20,6 @@ class BorrowingAPITestCase(APITestCase):
             email="another_user@example.com", password="password"
         )
 
-        # Створюємо книгу
         self.book = Book.objects.create(
             title="Test Book",
             author="Author",
@@ -30,7 +28,6 @@ class BorrowingAPITestCase(APITestCase):
             daily_fee="1.00",
         )
 
-        # Створюємо активне бронювання
         self.borrowing = Borrowing.objects.create(
             user=self.user,
             book=self.book,
@@ -85,7 +82,9 @@ class BorrowingAPITestCase(APITestCase):
 
     def test_update_completed_borrowing(self):
         self.authenticate(self.user)
-        url = reverse("borrowings:borrowing-detail", args=[self.borrowing_completed.id])
+        url = reverse(
+            "borrowings:borrowing-detail", args=[self.borrowing_completed.id]
+        )
 
         response = self.client.patch(
             url, {"manage_this_borrowing": "return"}, format="json"
@@ -165,7 +164,10 @@ class BorrowingAPITestCase(APITestCase):
 
         response = self.client.post(
             url,
-            {"book": self.book.id, "expected_return_date": past_date.isoformat()},
+            {
+                "book": self.book.id,
+                "expected_return_date": past_date.isoformat(),
+            },
             format="json",
         )
 
