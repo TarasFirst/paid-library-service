@@ -28,18 +28,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Create .env file and replace all "value" for your own values:
+## Rename ".env.example" file to ".env" file and replace all "value" for your own values:
 
-```plaintext
-POSTGRES_PASSWORD=value
-POSTGRES_USER=value
-POSTGRES_DB=value
-POSTGRES_HOST=value
-POSTGRES_PORT=5432
-PGDATA=/var/lib/postgresql/data
-SECRET_KEY="value"
-ACCESS="private_access"
-```
 
 ## Run with Docker
 
