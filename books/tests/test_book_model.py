@@ -9,7 +9,7 @@ class BookInventoryTests(TestCase):
         self.book = Book.objects.create(
             title="Test Book",
             author="Test Author",
-            cover=Book.SOFT,
+            cover=Book.CoverType.SOFT,
             inventory=5,
             daily_fee=1.99,
         )

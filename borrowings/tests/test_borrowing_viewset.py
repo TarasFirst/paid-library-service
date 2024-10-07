@@ -26,14 +26,14 @@ class BorrowingViewSetTestCase(APITestCase):
         self.book_with_inventory = Book.objects.create(
             title="Available Book",
             author="Author",
-            cover=Book.HARD,
+            cover=Book.CoverType.HARD,
             inventory=5,
             daily_fee="1.00",
         )
         self.book_no_inventory = Book.objects.create(
             title="Unavailable Book",
             author="Author",
-            cover=Book.SOFT,
+            cover=Book.CoverType.SOFT,
             inventory=0,
             daily_fee="1.50",
         )
