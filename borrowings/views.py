@@ -7,7 +7,6 @@ from rest_framework.exceptions import (
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
