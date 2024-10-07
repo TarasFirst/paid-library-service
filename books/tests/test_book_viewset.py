@@ -92,7 +92,7 @@ class BookViewSetPermissionsTest(APITestCase):
         data = {
             "title": "New Book",
             "author": "Author",
-            "cover": "HARD",
+            "cover": "HARD COVER",
             "inventory": 5,
             "daily_fee": "4.99",
         }

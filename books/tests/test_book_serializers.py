@@ -73,7 +73,7 @@ class BookSerializerCustomLogicTest(APITestCase):
         data = {
             "title": "Admin Book",
             "author": "Admin Author",
-            "cover": "HARD",
+            "cover": "HARD COVER",
             "inventory": 5,
             "daily_fee": "9.99",
         }

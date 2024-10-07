@@ -23,7 +23,7 @@ class BorrowingAPITestCase(APITestCase):
         self.book = Book.objects.create(
             title="Test Book",
             author="Author",
-            cover=Book.HARD,
+            cover=Book.CoverType.HARD,
             inventory=5,
             daily_fee="1.00",
         )
